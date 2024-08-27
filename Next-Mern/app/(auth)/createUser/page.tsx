@@ -1,9 +1,10 @@
-"use client";
-
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { Button } from "@/components/ui/button";
+"use client"
+import { useToast } from '@/components/ui/use-toast'
+import React from 'react'
+import { z } from "zod"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { Button } from "@/components/ui/button"
 import {
   Form,
   FormControl,
@@ -12,10 +13,18 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import Link from "next/link";
+} from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import { Label } from '@/components/ui/label'
+import Link from 'next/link'
+import useAuthStore from '@/hooks/useAuth'
+import registerUser from '@/actions/register'
+import { startSession } from '@/lib/session'
+import { useRouter } from 'next/navigation'
+import { error } from 'console'
+import { Loader2Icon } from 'lucide-react'
+
+
 
 const formSchema = z.object({
   username: z.string().min(2, {
@@ -27,76 +36,124 @@ const formSchema = z.object({
   password: z.string().min(2, {
     message: "Password must be at least 2 characters.",
   }),
-});
- 
-export function createUser() {
+})
 
-  
+const CreateUserPage = () => {
+
+
+
+  const {loader, setLoader} = useAuthStore();
+  const { toast } = useToast()
+  const router = useRouter();
+
+  const showToast = () => {
+    toast({
+      title: "Account Created",
+      description: "Your account has been successfully created.",
+      variant: "success", 
+    })
+  }
+
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      username: '',
-      email:'',
-      password:''
+      email: "",
+      username:"",
+      password:""
     },
-  });
+  })
 
-  const onSubmit = () => {};
+  const onSubmit=(data:z.infer<typeof formSchema>)=>{
+    setLoader(true);
+
+    registerUser(data.username, data.email, data.password).then(
+      (resp)=>{
+        startSession(resp.user, resp.jwt);
+        showToast()
+        setLoader(false);
+        router.push("/")
+      },
+      (error)=>{
+        setLoader(false);
+        toast({
+          variant:"destructive",
+          title: "Something went wrong",
+        })
+
+      }
+    ).finally(()=>{
+      setLoader(false)
+    })
+
+  }
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 w-4/5">
-        <FormField
-          control={form.control}
-          name="username"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="textone">Username</FormLabel>
-              <FormControl>
-                <Input placeholder="Username" {...field} />
-              </FormControl>
-              <FormMessage className="validationLogin" />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="textone">Email</FormLabel>
-              <FormControl>
-                <Input placeholder="Email@gmail.com" {...field} />
-              </FormControl>
-              <FormMessage className="validationLogin" />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="password"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="textone">Password</FormLabel>
-              <FormControl>
-                <Input placeholder="Password" {...field} />
-              </FormControl>
-              <FormMessage className="validationLogin" />
-            </FormItem>
-          )}
-        />
-        <Button className="w-full" type="submit">Submit</Button>
-      </form>
-      <div className=" mt-8">
-            <Label className="flex items-center flex-col">
-              Allready account ?
-              <Link href="/Login" className="mt-5 font-semibold cursor-pointer text-mycolor6">
-                  Click here to login page
-              </Link>
-            </Label>
-      </div>
-    </Form>
-  );
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 w-4/5">
+    <FormField
+        control={form.control}
+        name="username"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel className='textone'>Username</FormLabel>
+            <FormControl>
+              <Input placeholder="Username" {...field} />
+            </FormControl>
+            <FormMessage className='validationLogin' />
+          </FormItem>
+        )}
+      />
+     
+      <FormField
+        control={form.control}
+        name="email"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel className='textone'>Email</FormLabel>
+            <FormControl>
+              <Input placeholder="email[]gmail.com" {...field} />
+            </FormControl>
+            <FormMessage className='validationLogin' />
+          </FormItem>
+        )}
+      />
+
+    <FormField
+        control={form.control}
+        name="password"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel className='textone'>Password</FormLabel>
+            <FormControl>
+              <Input placeholder="Password" type="password" {...field} />
+            </FormControl>
+            <FormMessage className='validationLogin' />
+          </FormItem>
+        )}
+      />
+
+      <Button className='w-full' type="submit">
+
+        {loader? <Loader2Icon className='animate-spin'/> :"Create Account"}
+      </Button>
+    </form>
+
+    <div className='mt-8 '>
+      <Label className='flex flex-col items-center'>
+        Allready Account
+   
+        <Link href="/Login" 
+        className='text-mycolor3 font-semibold mt-5'>
+        Click here to login page
+        </Link>
+
+      </Label>
+
+
+    </div>
+  </Form>
+  )
 }
 
-export default createUser;
+export default CreateUserPage

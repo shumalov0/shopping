@@ -1,6 +1,7 @@
 import React from "react";
 import Image from "next/image";
 import Logo from "@/components/Logo";
+
 interface layout {
   children: React.ReactNode;
 }
